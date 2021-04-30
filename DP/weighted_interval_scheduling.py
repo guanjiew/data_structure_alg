@@ -40,39 +40,51 @@ def comp_prev_lrgst_compat_intval_idx(sorted_interval):
     return prev_compat_idx
 
 
+def bottom_up_dp_update_opt_idx_weight(intervals, compat_idx_lst, opt_weight_map,
+                                       compat_idx_map):
+    num_intervals = len(intervals)
+    for i in range(num_intervals):
+        prev_opt_weight = opt_weight_map[i - 1]
+        prev_compat_opt_weight = opt_weight_map[compat_idx_lst[i]]
+        cur_intval_weight = intervals[i].weight
+        cur_opt_weight = max(prev_opt_weight, prev_compat_opt_weight + cur_intval_weight)
+        opt_weight_map[i] = cur_opt_weight
+        if prev_opt_weight == cur_opt_weight:
+            compat_idx_map[i] = compat_idx_map[i - 1]
+        else:
+            compat_idx_map[i] = compat_idx_map[compat_idx_lst[i]]
+            compat_idx_map[i].append(intervals[i])
+
+
+def print_opt_intervals(intervals, compat_idx_lst, opt_weight_map, compat_idx_map):
+    print("========================================")
+    print("Input Interval Lists:")
+    print("========================================")
+    for interval in intervals:
+        print(interval)
+    print("========================================")
+    print("Solution Breakdown:")
+    print("========================================")
+    print("Largest previous compatible index list: ", compat_idx_lst)
+    print("Optimal Interval Scheduling:")
+    num_intervals = len(intervals)
+    for interval in compat_idx_map[num_intervals - 1]:
+        print(interval)
+    print("Index Optimal weight map: ", opt_weight_map)
+    print("Optimal weights: ", opt_weight_map[num_intervals - 1])
+
+
 def compute_opt_weighted_interval_schedule(intervals, debug_mode):
     intervals_sorted_by_finish = sorted(intervals, key=lambda each_interval: each_interval.finish)
     prev_compat_idx = comp_prev_lrgst_compat_intval_idx(intervals_sorted_by_finish)
     idx_to_opt_weight_map = {-1: 0}
     cur_idx_to_prev_compat_idx_map = {-1: []}
-    num_intervals = len(intervals)
-    for i in range(num_intervals):
-        prev_opt_weight = idx_to_opt_weight_map[i - 1]
-        prev_compat_opt_weight = idx_to_opt_weight_map[prev_compat_idx[i]]
-        cur_intval_weight = intervals_sorted_by_finish[i].weight
-        cur_opt_weight = max(prev_opt_weight, prev_compat_opt_weight + cur_intval_weight)
-        idx_to_opt_weight_map[i] = cur_opt_weight
-        if prev_opt_weight == cur_opt_weight:
-            cur_idx_to_prev_compat_idx_map[i] = cur_idx_to_prev_compat_idx_map[i - 1]
-        else:
-            cur_idx_to_prev_compat_idx_map[i] = cur_idx_to_prev_compat_idx_map[prev_compat_idx[i]]
-            cur_idx_to_prev_compat_idx_map[i].append(intervals[i])
+    bottom_up_dp_update_opt_idx_weight(intervals_sorted_by_finish, prev_compat_idx, idx_to_opt_weight_map,
+                                       cur_idx_to_prev_compat_idx_map)
     if debug_mode:
-        print("========================================")
-        print("Input Interval Lists:")
-        print("========================================")
-        for interval in intervals_sorted_by_finish:
-            print(interval)
-        print("========================================")
-        print("Solution Breakdown:")
-        print("========================================")
-        print("Largest previous compatible index list: ", prev_compat_idx)
-        print("Optimal Interval Scheduling:")
-        for interval in cur_idx_to_prev_compat_idx_map[num_intervals - 1]:
-            print(interval)
-        print("Index Optimal weight map: ", idx_to_opt_weight_map)
-        print("Optimal weights: ",  idx_to_opt_weight_map[num_intervals - 1])
-    return idx_to_opt_weight_map[num_intervals - 1]
+        print_opt_intervals(intervals_sorted_by_finish, prev_compat_idx, idx_to_opt_weight_map,
+                            cur_idx_to_prev_compat_idx_map)
+    return idx_to_opt_weight_map[len(intervals) - 1]
 
 
 if __name__ == '__main__':
